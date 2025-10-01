@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> AWAITING_PAYMENT
+    AWAITING_PAYMENT --> AWAITING_DELIVERY : Buyer Pays
+    AWAITING_PAYMENT --> CANCELED : Cancel Trade
+    AWAITING_DELIVERY --> DELIVERED : Seller Delivers
+    AWAITING_DELIVERY --> DISPUTED : Raise Dispute
+    DELIVERED --> COMPLETED : Buyer Confirms
+    DELIVERED --> DISPUTED : Raise Dispute
+    DISPUTED --> RESOLVED : Admin Resolves
+    COMPLETED --> [*]
+    CANCELED --> [*]
+    RESOLVED --> [*]
+
