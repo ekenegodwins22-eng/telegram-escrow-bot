@@ -3,6 +3,8 @@ import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, ConversationHandler, CallbackQueryHandler
+from pymongo import MongoClient
+from datetime import datetime
 
 # Enable logging
 logging.basicConfig(
@@ -11,12 +13,17 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Get bot token from environment variable
+# Get bot token and MongoDB URI from environment variables
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN")
+MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
+
+# MongoDB setup
+client = MongoClient(MONGODB_URI)
+db = client.escrow_bot
+trades_collection = db.trades
 
 # Trade states
 ITEM, PRICE, CURRENCY, CONFIRMATION = range(4)
-
 
 def start(update: Update, context: CallbackContext) -> None:
     """Sends a welcome message when the /start command is issued."""
@@ -63,8 +70,28 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()
     if query.data == "confirm":
-        query.edit_message_text(text="Trade confirmed. The other party will be notified.")
-        # Here you would add the logic to notify the other user and store the trade
+        # Generate a unique Trade ID (simple example, needs more robust generation)
+        trade_id = f"T{trades_collection.count_documents({}) + 1:05d}"
+        
+        trade_data = {
+            "trade_id": trade_id,
+            "buyer_id": update.effective_user.id,
+            "buyer_username": update.effective_user.username,
+            "item": context.user_data["item"],
+            "price": context.user_data["price"],
+            "currency": context.user_data["currency"],
+            "status": "AWAITING_COUNTERPARTY_APPROVAL",
+            "created_at": datetime.now(),
+            "last_updated": datetime.now()
+        }
+        trades_collection.insert_one(trade_data)
+
+        share_link = f"https://t.me/{context.bot.username}?start={trade_id}"
+        query.edit_message_text(
+            text=f"Trade confirmed. Your Trade ID is `{trade_id}`. "
+                 f"Share this link with the other party to start the trade: {share_link}"
+        )
+        logger.info(f"Trade {trade_id} initiated by {update.effective_user.username}")
     else:
         query.edit_message_text(text="Trade canceled.")
     return ConversationHandler.END
