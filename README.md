@@ -15,18 +15,21 @@ The Universal Telegram Escrow Bot is designed to facilitate secure and trustwort
 *   **Automated Reminders & Deadlines:** The bot sends automated reminders for payment and delivery deadlines, with auto-cancellation features for unfulfilled obligations.
 *   **Nigeria Time Zone (WAT):** All time-sensitive operations, including deadlines and reminders, are managed according to the West African Time (WAT) zone.
 *   **Transparent Fee Structure:** A clear, tiered fee structure is applied, with fees typically borne by the seller.
+*   **Admin Force Release Option:** Administrators can force the release of an asset if a seller is unresponsive or refusing to release after payment, ensuring trade progression.
+*   **Manual Refund Process:** A structured `/refund` command for buyers, involving admin verification and careful collection of original payment details to ensure secure and accurate refunds.
+*   **Comprehensive Admin Dashboard:** A `/dashboard` command providing daily summaries (WAT) and on-demand full trade history (`/view`), including total trades, pending trades, open disputes, refunds issued, and escrow volume by currency.
 
 ## How it Works (High-Level Flow)
 
 1.  **Initiate Trade:** A user (buyer or seller) starts a trade using the `/trade` command.
 2.  **Specify Item & Details:** Users provide details about the item/service, price, currency, payment method, and deadline.
-3.  **Review & Share:** The bot summarizes the trade details, generates a unique Trade ID, and provides a shareable link for the counterparty.
+3.  **Review & Share:** The bot summarizes the trade details, calculates fees (seller sees net amount), generates a unique Trade ID, and provides a shareable link for the counterparty.
 4.  **Counterparty Approval:** The other party reviews and approves the trade.
 5.  **Buyer Pays:** The buyer sends payment to the bot (escrow) and provides proof.
-6.  **Admin Verification:** An admin verifies the payment.
+6.  **Admin Verification:** An admin verifies the payment. If rejected, the admin provides a reason to the buyer.
 7.  **Seller Releases Asset:** Upon payment verification, the seller releases the asset/service to the buyer.
 8.  **Buyer Confirms Receipt:** The buyer confirms receipt, and funds are released to the seller (minus fees).
-9.  **Dispute/Refund (if applicable):** If issues arise, a dispute can be raised, or a refund processed based on predefined rules or admin intervention.
+9.  **Dispute/Refund (if applicable):** If issues arise, a dispute can be raised, or a manual refund process initiated by the buyer (requiring admin approval and verification of original payment details).
 
 ## Deployment
 
