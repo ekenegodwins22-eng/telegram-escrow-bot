@@ -34,7 +34,7 @@ Follow these steps to deploy your Universal Telegram Escrow Bot on Koyeb:
     *   **Build Command**: Koyeb typically handles Python dependencies automatically by installing `requirements.txt`. For this project, the default should work.
     *   **Run Command**: Specify the command to start your bot:
         ```bash
-        python3.11 main.py
+        python3 main.py
         ```
 5.  **Set Environment Variables**:
     In the Koyeb service configuration, navigate to the **Environment Variables** section and add the following:
