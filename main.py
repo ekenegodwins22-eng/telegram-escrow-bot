@@ -1,4 +1,4 @@
-
+'''
 import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -131,7 +131,7 @@ async def item_category(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["item_category"] = query.data.split("_")[1]
-    await query.edit_message_text(f"Selected category: {context.user_data["item_category"]}.\n\nPlease provide a detailed description of the item you are trading.")
+    await query.edit_message_text(f"Selected category: {context.user_data['item_category']}.\n\nPlease provide a detailed description of the item you are trading.")
     return ITEM_DESCRIPTION
 
 async def item_description(update: Update, context: CallbackContext) -> int:
@@ -171,7 +171,7 @@ async def payment_method(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["payment_method"] = query.data.split("_")[1]
-    await query.edit_message_text(f"Selected payment method: {context.user_data["payment_method"]}.\n\nPlease provide the trade deadline (e.g., YYYY-MM-DD HH:MM). All times are in WAT.")
+    await query.edit_message_text(f"Selected payment method: {context.user_data['payment_method']}.\n\nPlease provide the trade deadline (e.g., YYYY-MM-DD HH:MM). All times are in WAT.")
     return DEADLINE
 
 async def deadline_input(update: Update, context: CallbackContext) -> int:
@@ -237,14 +237,14 @@ async def counterparty_id(update: Update, context: CallbackContext) -> int:
         trade_summary = (
             f"*Trade Summary*\n\n"
             f"*Seller*: {update.effective_user.first_name} (@{update.effective_user.username or 'N/A'})\n"
-            f"*Buyer*: {context.user_data["buyer_username"] or context.user_data["buyer_id"]}\n"
-            f"*Category*: {context.user_data["item_category"]}\n"
-            f"*Description*: {context.user_data["item_description"]}\n"
-            f"*Price*: {context.user_data["price"]:.2f} {context.user_data["currency"]}\n"
-            f"*Escrow Fee*: {context.user_data["fee_amount"]:.2f} {context.user_data["currency"]}\n"
-            f"*Total Buyer Pays*: {(context.user_data["price"] + context.user_data["fee_amount"]):.2f} {context.user_data["currency"]}\n"
-            f"*Payment Method*: {context.user_data["payment_method"]}\n"
-            f"*Deadline*: {context.user_data["deadline"].strftime('%Y-%m-%d %H:%M %Z')}\n"
+            f"*Buyer*: {context.user_data['buyer_username'] or context.user_data['buyer_id']}\n"
+            f"*Category*: {context.user_data['item_category']}\n"
+            f"*Description*: {context.user_data['item_description']}\n"
+            f"*Price*: {context.user_data['price']:.2f} {context.user_data['currency']}\n"
+            f"*Escrow Fee*: {context.user_data['fee_amount']:.2f} {context.user_data['currency']}\n"
+            f"*Total Buyer Pays*: {(context.user_data['price'] + context.user_data['fee_amount']):.2f} {context.user_data['currency']}\n"
+            f"*Payment Method*: {context.user_data['payment_method']}\n"
+            f"*Deadline*: {context.user_data['deadline'].strftime('%Y-%m-%d %H:%M %Z')}\n"
         )
 
         keyboard = [
@@ -311,12 +311,12 @@ async def confirmation_handler(update: Update, context: CallbackContext) -> int:
             buyer_message = (
                 f"You have been invited to a new escrow trade (ID: `{unique_trade_id}`).\n\n"
                 f"*Seller*: {query.from_user.first_name} (@{query.from_user.username or 'N/A'})\n"
-                f"*Item*: {context.user_data["item_description"]} ({context.user_data["item_category"]})\n"
-                f"*Price*: {context.user_data["price"]:.2f} {context.user_data["currency"]}\n"
-                f"*Escrow Fee*: {context.user_data["fee_amount"]:.2f} {context.user_data["currency"]}\n"
-                f"*Total to Pay*: {(context.user_data["price"] + context.user_data["fee_amount"]):.2f} {context.user_data["currency"]}\n"
-                f"*Payment Method*: {context.user_data["payment_method"]}\n"
-                f"*Deadline*: {context.user_data["deadline"].strftime('%Y-%m-%d %H:%M %Z')}\n\n"
+                f"*Item*: {context.user_data['item_description']} ({context.user_data['item_category']})\n"
+                f"*Price*: {context.user_data['price']:.2f} {context.user_data['currency']}\n"
+                f"*Escrow Fee*: {context.user_data['fee_amount']:.2f} {context.user_data['currency']}\n"
+                f"*Total to Pay*: {(context.user_data['price'] + context.user_data['fee_amount']):.2f} {context.user_data['currency']}\n"
+                f"*Payment Method*: {context.user_data['payment_method']}\n"
+                f"*Deadline*: {context.user_data['deadline'].strftime('%Y-%m-%d %H:%M %Z')}\n\n"
                 f"Do you approve this trade?"
             )
             buyer_keyboard = [
@@ -338,18 +338,65 @@ async def confirmation_handler(update: Update, context: CallbackContext) -> int:
         await query.edit_message_text("An unexpected error occurred. Please try again later.")
         return ConversationHandler.END
 
-async def cancel_trade(update: Update, context: CallbackContext) -> int:
-    """Cancels the trade conversation."""
-    await update.message.reply_text("Trade creation canceled.")
-    return ConversationHandler.END
+async def handle_trade_link(update: Update, context: CallbackContext) -> None:
+    """Handles trade link clicks to approve/reject a trade."""
+    user_id = update.effective_user.id
+    trade_id = context.args[0].split("_")[1] if context.args and len(context.args[0].split("_")) > 1 else None
 
-async def handle_buyer_approval(update: Update, context: CallbackContext) -> None:
+    if not trade_id:
+        return
+
+    if not trades_collection:
+        logger.error("MongoDB trades_collection not initialized.")
+        await update.message.reply_text("Bot is experiencing technical difficulties. Please try again later.")
+        return
+
+    try:
+        trade_doc = trades_collection.find_one({"trade_id": trade_id})
+
+        if not trade_doc:
+            await update.message.reply_text(f"Trade `{trade_id}` not found.")
+            return
+
+        if user_id != trade_doc["buyer_id"]:
+            await update.message.reply_text("You are not the buyer for this trade.")
+            return
+
+        if trade_doc["status"] != "pending_buyer_approval":
+            await update.message.reply_text(f"This trade is no longer pending approval. Current status: {trade_doc['status']}.")
+            return
+
+        # Present approval buttons
+        buyer_message = (
+            f"You have been invited to a new escrow trade (ID: `{trade_id}`).\n\n"
+            f"*Seller*: (Seller info not shown here for brevity)\n"
+            f"*Item*: {trade_doc['item_description']} ({trade_doc['item_category']})\n"
+            f"*Price*: {trade_doc['price']:.2f} {trade_doc['currency']}\n"
+            f"*Escrow Fee*: {trade_doc['fee_amount']:.2f} {trade_doc['currency']}\n"
+            f"*Total to Pay*: {(trade_doc['price'] + trade_doc['fee_amount']):.2f} {trade_doc['currency']}\n"
+            f"*Payment Method*: {trade_doc['payment_method']}\n"
+            f"*Deadline*: {trade_doc['deadline'].strftime('%Y-%m-%d %H:%M %Z')}\n\n"
+            f"Do you approve this trade?"
+        )
+        buyer_keyboard = [
+            [InlineKeyboardButton("Approve", callback_data=f"approve_trade_{trade_id}"),
+             InlineKeyboardButton("Reject", callback_data=f"reject_trade_{trade_id}")]
+        ]
+        buyer_reply_markup = InlineKeyboardMarkup(buyer_keyboard)
+        await update.message.reply_text(buyer_message, parse_mode='Markdown', reply_markup=buyer_reply_markup)
+    except OperationFailure as e:
+        logger.error(f"MongoDB operation failed while handling trade link for trade {trade_id}: {e}")
+        await update.message.reply_text("A database error occurred. Please try again later.")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while handling trade link for trade {trade_id}: {e}")
+        await update.message.reply_text("An unexpected error occurred. Please try again later.")
+
+async def trade_approval_handler(update: Update, context: CallbackContext) -> None:
     """Handles buyer's approval or rejection of a trade."""
     query = update.callback_query
     await query.answer()
-    action_type, _, trade_id = query.data.partition("trade_")
-    action = action_type.rstrip("_")
-    buyer_id = query.from_user.id
+    user_id = query.from_user.id
+    action, trade_id = query.data.split("_", 2)[1], query.data.split("_", 2)[2]
 
     if not trades_collection:
         logger.error("MongoDB trades_collection not initialized.")
@@ -357,47 +404,53 @@ async def handle_buyer_approval(update: Update, context: CallbackContext) -> Non
         return
 
     try:
-        trade_doc = trades_collection.find_one({"trade_id": trade_id, "buyer_id": buyer_id})
+        trade_doc = trades_collection.find_one({"trade_id": trade_id})
 
         if not trade_doc:
-            await query.edit_message_text("Trade not found or you are not the designated buyer.")
+            await query.edit_message_text(f"Trade `{trade_id}` not found.")
+            return
+
+        if user_id != trade_doc["buyer_id"]:
+            await query.edit_message_text("You are not authorized to approve/reject this trade.")
             return
 
         if trade_doc["status"] != "pending_buyer_approval":
-            await query.edit_message_text(f"This trade is already in status: {trade_doc['status']}.")
+            await query.edit_message_text(f"This trade is no longer pending approval. Current status: {trade_doc['status']}.")
             return
-
-        seller_id = trade_doc["seller_id"]
 
         if action == "approve":
+            new_status = "awaiting_payment"
             trades_collection.update_one(
                 {"trade_id": trade_id},
-                {"$set": {"status": "pending_payment", "updated_at": get_current_time()}}
+                {"$set": {"status": new_status, "updated_at": get_current_time()}}
             )
-            await query.edit_message_text(f"You have approved trade `{trade_id}`. Please proceed with payment using the agreed method: {trade_doc['payment_method']}. Once paid, use /upload_payment_proof {trade_id} to submit proof.", parse_mode='Markdown')
-            await context.bot.send_message(chat_id=seller_id, text=f"Good news! Your trade `{trade_id}` has been approved by the buyer. It is now `pending_payment`.", parse_mode='Markdown')
-            logger.info(f"Buyer {buyer_id} approved trade {trade_id}")
+            await query.edit_message_text(f"You have approved trade `{trade_id}`. Please upload proof of payment using /upload_payment {trade_id} <image_url>.", parse_mode='Markdown')
+            await context.bot.send_message(chat_id=trade_doc["seller_id"], text=f"Buyer has approved trade `{trade_id}`. Awaiting payment.", parse_mode='Markdown')
+            logger.info(f"Buyer {user_id} approved trade {trade_id}")
         elif action == "reject":
+            new_status = "rejected_by_buyer"
             trades_collection.update_one(
                 {"trade_id": trade_id},
-                {"$set": {"status": "cancelled", "updated_at": get_current_time()}}
+                {"$set": {"status": new_status, "updated_at": get_current_time()}}
             )
-            await query.edit_message_text(f"You have rejected trade `{trade_id}`. The trade has been cancelled.", parse_mode='Markdown')
-            await context.bot.send_message(chat_id=seller_id, text=f"Bad news. Your trade `{trade_id}` has been rejected by the buyer and is now `cancelled`.", parse_mode='Markdown')
-            logger.info(f"Buyer {buyer_id} rejected trade {trade_id}")
+            await query.edit_message_text(f"You have rejected trade `{trade_id}`.")
+            await context.bot.send_message(chat_id=trade_doc["seller_id"], text=f"Buyer has rejected trade `{trade_id}`.", parse_mode='Markdown')
+            logger.info(f"Buyer {user_id} rejected trade {trade_id}")
     except OperationFailure as e:
-        logger.error(f"MongoDB operation failed during buyer approval for trade {trade_id}: {e}")
+        logger.error(f"MongoDB operation failed during trade approval for trade {trade_id}: {e}")
         await query.edit_message_text("A database error occurred. Please try again later.")
     except Exception as e:
-        logger.error(f"An unexpected error occurred during buyer approval for trade {trade_id}: {e}")
+        logger.error(f"An unexpected error occurred during trade approval for trade {trade_id}: {e}")
         await query.edit_message_text("An unexpected error occurred. Please try again later.")
 
-# Admin Commands
-async def admin_dashboard(update: Update, context: CallbackContext) -> None:
-    """Displays a daily dashboard with trade statistics for admins."""
-    if not is_admin(update.effective_user.id):
-        await update.message.reply_text("You are not authorized to use this command.")
+async def upload_payment(update: Update, context: CallbackContext) -> None:
+    """Allows the buyer to upload proof of payment."""
+    user_id = update.effective_user.id
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text("Usage: /upload_payment <trade_id> <image_url>")
         return
+
+    trade_id, image_url = context.args[0], context.args[1]
 
     if not trades_collection:
         logger.error("MongoDB trades_collection not initialized.")
@@ -405,75 +458,41 @@ async def admin_dashboard(update: Update, context: CallbackContext) -> None:
         return
 
     try:
-        today = get_current_time().date()
-        start_of_day = WAT.localize(datetime(today.year, today.month, today.day))
-        end_of_day = start_of_day + timedelta(days=1)
+        trade_doc = trades_collection.find_one({"trade_id": trade_id})
 
-        total_trades_today = trades_collection.count_documents({"created_at": {"$gte": start_of_day, "$lt": end_of_day}})
-        pending_payments_today = trades_collection.count_documents({"status": "payment_awaiting_verification", "updated_at": {"$gte": start_of_day, "$lt": end_of_day}})
-        completed_trades_today = trades_collection.count_documents({"status": "completed", "updated_at": {"$gte": start_of_day, "$lt": end_of_day}})
-        disputes_today = trades_collection.count_documents({"dispute_status": {"$ne": "none"}, "updated_at": {"$gte": start_of_day, "$lt": end_of_day}})
-
-        dashboard_message = (
-            f"*Admin Dashboard - {today.strftime('%Y-%m-%d')}*\n\n"
-            f"*Total Trades Initiated Today*: {total_trades_today}\n"
-            f"*Pending Payments Verification Today*: {pending_payments_today}\n"
-            f"*Completed Trades Today*: {completed_trades_today}\n"
-            f"*Disputes Opened Today*: {disputes_today}\n\n"
-            f"Use /trade_history to view all trades."
-        )
-        await update.message.reply_text(dashboard_message, parse_mode='Markdown')
-    except OperationFailure as e:
-        logger.error(f"MongoDB operation failed during admin dashboard generation: {e}")
-        await update.message.reply_text("A database error occurred. Please try again later.")
-    except Exception as e:
-        logger.error(f"An unexpected error occurred during admin dashboard generation: {e}")
-        await update.message.reply_text("An unexpected error occurred. Please try again later.")
-
-async def trade_history(update: Update, context: CallbackContext) -> None:
-    """Displays full trade history, with optional status filter, for admins."""
-    if not is_admin(update.effective_user.id):
-        await update.message.reply_text("You are not authorized to use this command.")
-        return
-
-    if not trades_collection:
-        logger.error("MongoDB trades_collection not initialized.")
-        await update.message.reply_text("Bot is experiencing technical difficulties. Please try again later.")
-        return
-
-    try:
-        filter_status = None
-        if context.args:
-            filter_status = context.args[0].lower()
-
-        query = {}
-        if filter_status:
-            query["status"] = filter_status
-
-        trades = trades_collection.find(query).sort("created_at", -1).limit(20) # Limit to 20 for brevity
-
-        if not trades:
-            await update.message.reply_text("No trades found.")
+        if not trade_doc:
+            await update.message.reply_text(f"Trade `{trade_id}` not found.")
             return
 
-        history_message = "*Trade History*\n\n"
-        for trade_doc in trades:
-            history_message += (
-                f"*ID*: `{trade_doc['trade_id']}`\n"
-                f"*Status*: {trade_doc['status']}\n"
-                f"*Seller*: {trade_doc['seller_id']}\n"
-                f"*Buyer*: {trade_doc['buyer_id']}\n"
-                f"*Item*: {trade_doc['item_description']}\n"
-                f"*Price*: {trade_doc['price']:.2f} {trade_doc['currency']}\n"
-                f"*Created*: {trade_doc['created_at'].strftime('%Y-%m-%d %H:%M %Z')}\n"
-                f"---\n"
-            )
-        await update.message.reply_text(history_message, parse_mode='Markdown')
+        if user_id != trade_doc["buyer_id"]:
+            await update.message.reply_text("You are not the buyer for this trade.")
+            return
+
+        if trade_doc["status"] != "awaiting_payment":
+            await update.message.reply_text(f"This trade is not awaiting payment. Current status: {trade_doc['status']}.")
+            return
+
+        # Validate image URL (simple check)
+        if not image_url.startswith("http"):
+            await update.message.reply_text("Please provide a valid image URL.")
+            return
+
+        trades_collection.update_one(
+            {"trade_id": trade_id},
+            {"$set": {"payment_proof_url": image_url, "status": "payment_awaiting_verification", "updated_at": get_current_time()}}
+        )
+
+        await update.message.reply_text(f"Payment proof for trade `{trade_id}` has been uploaded. An admin will verify it shortly.", parse_mode='Markdown')
+        logger.info(f"Buyer {user_id} uploaded payment proof for trade {trade_id}")
+
+        # Notify admins
+        for admin_id in ADMIN_IDS:
+            await context.bot.send_message(chat_id=admin_id, text=f"*Payment Verification Needed!*\n\nTrade ID: `{trade_id}`\nProof: {image_url}\n\nUse /verify_payment {trade_id} to verify.", parse_mode='Markdown')
     except OperationFailure as e:
-        logger.error(f"MongoDB operation failed during trade history retrieval: {e}")
+        logger.error(f"MongoDB operation failed during payment upload for trade {trade_id}: {e}")
         await update.message.reply_text("A database error occurred. Please try again later.")
     except Exception as e:
-        logger.error(f"An unexpected error occurred during trade history retrieval: {e}")
+        logger.error(f"An unexpected error occurred during payment upload for trade {trade_id}: {e}")
         await update.message.reply_text("An unexpected error occurred. Please try again later.")
 
 async def verify_payment(update: Update, context: CallbackContext) -> None:
@@ -499,7 +518,7 @@ async def verify_payment(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(f"Trade `{trade_id}` not found.")
             return
 
-        if trade_doc["status"] != "payment_awaiting_verification":
+        if trade_doc['status'] != "payment_awaiting_verification":
             await update.message.reply_text(f"Trade `{trade_id}` is not awaiting payment verification. Current status: {trade_doc['status']}.")
             return
 
@@ -558,7 +577,7 @@ async def force_release(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(f"Trade `{trade_id}` not found.")
             return
 
-        if trade_doc["status"] != "payment_verified":
+        if trade_doc['status'] != "payment_verified":
             await update.message.reply_text(f"Trade `{trade_id}` is not in `payment_verified` status. Current status: {trade_doc['status']}. Cannot force release.")
             return
 
@@ -645,7 +664,7 @@ async def refund_command(update: Update, context: CallbackContext) -> int:
             await update.message.reply_text("You can only request a refund for trades you are part of.")
             return ConversationHandler.END
 
-        if trade_doc["status"] not in ["payment_verified", "dispute_resolved"]:
+        if trade_doc['status'] not in ["payment_verified", "dispute_resolved"]:
             await update.message.reply_text(f"Refunds can only be requested for trades that are `payment_verified` or `dispute_resolved`. Current status: {trade_doc['status']}.")
             return ConversationHandler.END
 
@@ -746,7 +765,7 @@ async def verify_refund(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(f"Trade `{trade_id}` not found.")
             return
 
-        if trade_doc["status"] != "refund_initiated":
+        if trade_doc['status'] != "refund_initiated":
             await update.message.reply_text(f"Trade `{trade_id}` is not in `refund_initiated` status. Current status: {trade_doc['status']}.")
             return
 
@@ -774,7 +793,8 @@ async def verify_refund(update: Update, context: CallbackContext) -> None:
         logger.error(f"MongoDB operation failed during refund verification for trade {trade_id}: {e}")
         await update.message.reply_text("A database error occurred. Please try again later.")
     except Exception as e:
-        logger.error(f"An unexpected error occurred during refund verification for trade {trade_id}: {e}")
+        logger.error(f"An unexpected error occurred during refund verification for trade {trade_id}: {e}
+")
         await update.message.reply_text("An unexpected error occurred. Please try again later.")
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
@@ -793,47 +813,46 @@ def main() -> None:
     trade_conv_handler = ConversationHandler(
         entry_points=[CommandHandler("trade", trade)],
         states={
-            ITEM_CATEGORY: [CallbackQueryHandler(item_category, pattern='^category_')],
+            ITEM_CATEGORY: [CallbackQueryHandler(item_category, pattern="^category_")],
             ITEM_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, item_description)],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, price_input)],
             CURRENCY: [MessageHandler(filters.TEXT & ~filters.COMMAND, currency_input)],
-            PAYMENT_METHOD: [CallbackQueryHandler(payment_method, pattern='^pm_')],
+            PAYMENT_METHOD: [CallbackQueryHandler(payment_method, pattern="^pm_")],
             DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, deadline_input)],
             COUNTERPARTY_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, counterparty_id)],
-            CONFIRMATION: [CallbackQueryHandler(confirmation_handler, pattern='^(confirm_trade|cancel_trade)$')],
+            CONFIRMATION: [CallbackQueryHandler(confirmation_handler, pattern="^confirm_trade$|^cancel_trade$")]
         },
-        fallbacks=[CommandHandler("cancel", cancel_trade)],
+        fallbacks=[CommandHandler("cancel", lambda u, c: u.message.reply_text("Trade canceled.") or ConversationHandler.END)],
     )
 
     # Conversation handler for /refund command
     refund_conv_handler = ConversationHandler(
         entry_points=[CommandHandler("refund", refund_command)],
         states={
-            REFUND_REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, refund_reason)],
+            REFUND_REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, refund_reason)]
         },
-        fallbacks=[CommandHandler("cancel", cancel_trade)], # Using the same cancel for now
+        fallbacks=[CommandHandler("cancel", lambda u, c: u.message.reply_text("Refund process canceled.") or ConversationHandler.END)]
     )
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(trade_conv_handler)
     application.add_handler(refund_conv_handler)
-    application.add_handler(CallbackQueryHandler(handle_buyer_approval, pattern='^(approve_trade|reject_trade)_trade_'))
-
-    # Admin Command Handlers
-    application.add_handler(CommandHandler("dashboard", admin_dashboard))
-    application.add_handler(CommandHandler("trade_history", trade_history))
+    application.add_handler(CallbackQueryHandler(trade_approval_handler, pattern="^approve_trade_|^reject_trade_"))
+    application.add_handler(CommandHandler("upload_payment", upload_payment))
     application.add_handler(CommandHandler("verify_payment", verify_payment))
     application.add_handler(CommandHandler("force_release", force_release))
     application.add_handler(CommandHandler("resolve_dispute", resolve_dispute))
     application.add_handler(CommandHandler("verify_refund", verify_refund))
 
+    # Handle trade links
+    application.add_handler(MessageHandler(filters.Regex(r'/start trade_'), handle_trade_link))
+
     # Error handler
     application.add_error_handler(error_handler)
 
-    logger.info("Bot started polling...")
+    # Run the bot
     application.run_polling()
 
 if __name__ == "__main__":
     main()
-
-
+'''
