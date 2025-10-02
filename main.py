@@ -17,8 +17,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Get bot token, MongoDB URI, and Admin IDs from environment variables
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN")
-MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+if not TOKEN:
+    logger.error("TELEGRAM_BOT_TOKEN environment variable not set. Exiting.")
+    exit(1)
+MONGODB_URI = os.environ.get("MONGODB_URI")
+if not MONGODB_URI:
+    logger.error("MONGODB_URI environment variable not set. Exiting.")
+    exit(1)
+
+
 ADMIN_IDS_STR = os.environ.get("ADMIN_IDS", "")
 ADMIN_IDS = [int(uid.strip()) for uid in ADMIN_IDS_STR.split(",") if uid.strip()]
 
