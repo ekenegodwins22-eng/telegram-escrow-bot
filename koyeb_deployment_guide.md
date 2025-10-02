@@ -38,14 +38,16 @@ Koyeb will automatically detect that it's a Python application. You may need to 
 
 ### 4. Set Environment Variables
 
-This is a crucial step. Your bot requires the `TELEGRAM_BOT_TOKEN` to function. No other Telegram API keys are needed.
+This is a crucial step. Your bot requires the `TELEGRAM_BOT_TOKEN` and `ADMIN_IDS` to function. No other Telegram API keys are needed.
 
 1.  In the Koyeb service configuration, navigate to the **Environment Variables** section.
-2.  Add a new environment variable:
+2.  Add the following environment variables:
     *   **Key:** `TELEGRAM_BOT_TOKEN`
     *   **Value:** Your actual Telegram Bot Token (e.g., `123456:ABC-DEF1234ghIkl-789_jklmnoPQRSTUV`)
+    *   **Key:** `ADMIN_IDS`
+    *   **Value:** A comma-separated list of Telegram user IDs for your bot administrators (e.g., `123456789,987654321`)
 
-    **Important:** Never hardcode your bot token directly into your code. Always use environment variables for sensitive information.
+    **Important:** Never hardcode your bot token or admin IDs directly into your code. Always use environment variables for sensitive information.
 
 ### 5. Deploy the Service
 

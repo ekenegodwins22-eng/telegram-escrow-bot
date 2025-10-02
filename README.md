@@ -17,6 +17,7 @@ The Universal Telegram Escrow Bot is designed to facilitate secure and trustwort
 *   **Transparent Fee Structure:** A clear, tiered fee structure is applied, with fees typically borne by the seller.
 *   **Admin Force Release Option:** Administrators can force the release of an asset if a seller is unresponsive or refusing to release after payment, ensuring trade progression.
 *   **Manual Refund Process:** A structured `/refund` command for buyers, involving admin verification and careful collection of original payment details to ensure secure and accurate refunds.
+*   **Admin User Identification:** The bot identifies administrators via `ADMIN_IDS` environment variable, granting them access to privileged commands and features.
 *   **Comprehensive Admin Dashboard:** A `/dashboard` command providing daily summaries (WAT) and on-demand full trade history (`/view`), including total trades, pending trades, open disputes, refunds issued, and escrow volume by currency.
 
 ## How it Works (High-Level Flow)
@@ -51,9 +52,11 @@ To run this bot locally for development or testing:
     pip install -r requirements.txt
     ```
 3.  **Set up environment variables:**
-    Create a `.env` file based on `.env.example` and replace `YOUR_BOT_TOKEN` with your actual Telegram Bot Token.
+    Create a `.env` file based on `.env.example` and replace `YOUR_BOT_TOKEN` with your actual Telegram Bot Token and `ADMIN_IDS` with the Telegram user IDs of your administrators.
     ```
     TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN
+    MONGODB_URI=mongodb://localhost:27017/
+    ADMIN_IDS=123456789,987654321
     ```
 4.  **Run the bot:**
     ```bash

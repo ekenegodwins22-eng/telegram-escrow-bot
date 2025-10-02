@@ -13,9 +13,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Get bot token and MongoDB URI from environment variables
+# Get bot token, MongoDB URI, and Admin IDs from environment variables
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN")
 MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
+ADMIN_IDS_STR = os.environ.get("ADMIN_IDS", "")
+ADMIN_IDS = [int(uid.strip()) for uid in ADMIN_IDS_STR.split(',') if uid.strip()]
 
 # MongoDB setup
 client = MongoClient(MONGODB_URI)
@@ -25,12 +27,20 @@ trades_collection = db.trades
 # Trade states
 ITEM, PRICE, CURRENCY, CONFIRMATION = range(4)
 
+def is_admin(user_id: int) -> bool:
+    """Checks if a user ID belongs to an administrator."""
+    return user_id in ADMIN_IDS
+
 def start(update: Update, context: CallbackContext) -> None:
     """Sends a welcome message when the /start command is issued."""
-    update.message.reply_text(
-        "Welcome to the Universal Telegram Escrow Bot!\n\n" 
-        "To start a new trade, use the /trade command."
-    )
+    user_id = update.effective_user.id
+    welcome_message = "Welcome to the Universal Telegram Escrow Bot!\n\n" \
+                      "To start a new trade, use the /trade command."
+    
+    if is_admin(user_id):
+        welcome_message += "\n\n(Admin: You have access to admin commands like /dashboard and /view)"
+
+    update.message.reply_text(welcome_message)
 
 def trade(update: Update, context: CallbackContext) -> int:
     """Starts a new trade."""
