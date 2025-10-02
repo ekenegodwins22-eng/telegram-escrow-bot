@@ -6,31 +6,47 @@ The Universal Telegram Escrow Bot is designed to facilitate secure and trustwort
 
 ## Key Features
 
-*   **Secure Escrow System:** Funds are held securely by the bot until all trade conditions are met by both parties.
-*   **Detailed Trade Flows:** Comprehensive step-by-step processes for both buying and selling various types of items, including digital assets, cryptocurrencies, services, and physical goods.
-*   **Unique Trade Identification:** Each trade is assigned a unique Trade ID for easy tracking, communication, and management.
-*   **Shareable Trade Links:** Buyers can generate and share unique links with sellers to initiate and confirm trades.
-*   **Flexible Payment Methods:** Support for various payment methods, including bank transfers and cryptocurrency (USDT, USDC, BTC, ETH, other ERC20/BEP20 tokens).
-*   **Admin Verification & Dispute Resolution:** An administrative dashboard and process for verifying payments, resolving disputes, and ensuring fair outcomes.
-*   **Automated Reminders & Deadlines:** The bot sends automated reminders for payment and delivery deadlines, with auto-cancellation features for unfulfilled obligations.
-*   **Nigeria Time Zone (WAT):** All time-sensitive operations, including deadlines and reminders, are managed according to the West African Time (WAT) zone.
-*   **Transparent Fee Structure:** A clear, tiered fee structure is applied, with fees typically borne by the seller.
-*   **Admin Force Release Option:** Administrators can force the release of an asset if a seller is unresponsive or refusing to release after payment, ensuring trade progression.
-*   **Manual Refund Process:** A structured `/refund` command for buyers, involving admin verification and careful collection of original payment details to ensure secure and accurate refunds.
-*   **Admin User Identification:** The bot identifies administrators via `ADMIN_IDS` environment variable, granting them access to privileged commands and features.
-*   **Comprehensive Admin Dashboard:** A `/dashboard` command providing daily summaries (WAT) and on-demand full trade history (`/view`), including total trades, pending trades, open disputes, refunds issued, and escrow volume by currency.
+### Core Trade Flow
+- **Trade Initiation**: Users can initiate a trade using the `/trade` command, guided through a conversation to specify item details.
+- **Item Categorization**: Supports various item categories including Digital Assets, Crypto & Tokens, Services, Physical Goods, and Other.
+- **Detailed Trade Specification**: Users can define price, currency, payment method, and a specific deadline for the trade.
+- **Unique Trade ID**: Each trade is assigned a unique identifier for easy tracking.
+- **Counterparty Approval**: Shareable trade links allow the counterparty (buyer) to review and approve or reject trade terms.
+- **Fee Calculation**: Automatic calculation of escrow fees based on a tiered system (currently a flat 2.5%).
+- **Payment Verification**: Admins can verify payments submitted by buyers.
+- **Asset Release Confirmation**: Facilitates the confirmation of asset release upon successful payment verification.
+- **Dispute Handling**: Basic framework for dispute initiation and resolution.
+
+### Admin Features
+- **Admin Identification**: Admins are identified via the `ADMIN_IDS` environment variable and can access special commands.
+- **Payment Verification Interface**: Admins can verify payments for trades.
+- **Force Release Option**: Admins can force the release of assets for unresponsive sellers.
+- **Dispute Resolution Tools**: Admins have commands to mark disputes as resolved.
+- **Daily Dashboard**: Provides a summary of daily trade statistics.
+- **Full Trade History**: Admins can view a comprehensive history of all trades, with optional filtering.
+
+### Refund Process
+- **Manual Refund Initiation**: Users can initiate a refund request using the `/refund` command.
+- **Admin Verification**: Admins are notified of refund requests and can verify them.
+- **Refund Tracking**: Refund requests are tracked in the system.
+
+### Technical Details
+- **Database**: MongoDB for data persistence.
+- **Timezone**: All time-related operations are handled in Nigeria Time Zone (WAT).
+- **Deployment**: Designed for deployment on Koyeb.
+- **Configuration**: Utilizes environment variables for sensitive configurations.
 
 ## How it Works (High-Level Flow)
 
-1.  **Initiate Trade:** A user (buyer or seller) starts a trade using the `/trade` command.
-2.  **Specify Item & Details:** Users provide details about the item/service, price, currency, payment method, and deadline.
-3.  **Review & Share:** The bot summarizes the trade details, calculates fees (seller sees net amount), generates a unique Trade ID, and provides a shareable link for the counterparty.
-4.  **Counterparty Approval:** The other party reviews and approves the trade.
-5.  **Buyer Pays:** The buyer sends payment to the bot (escrow) and provides proof.
-6.  **Admin Verification:** An admin verifies the payment. If rejected, the admin provides a reason to the buyer.
-7.  **Seller Releases Asset:** Upon payment verification, the seller releases the asset/service to the buyer.
-8.  **Buyer Confirms Receipt:** The buyer confirms receipt, and funds are released to the seller (minus fees).
-9.  **Dispute/Refund (if applicable):** If issues arise, a dispute can be raised, or a manual refund process initiated by the buyer (requiring admin approval and verification of original payment details).
+1.  **Initiate Trade:** A user starts a trade using the `/trade` command.
+2.  **Specify Item & Details:** The user is guided through a conversation to provide details about the item/service, price, currency, payment method, and deadline.
+3.  **Counterparty Identification:** The user provides the Telegram ID or username of the counterparty (buyer).
+4.  **Review & Confirm:** The bot summarizes the trade details, calculates fees, generates a unique Trade ID, and the initiator confirms.
+5.  **Buyer Approval:** A shareable link is sent to the buyer for their approval or rejection of the trade terms.
+6.  **Payment (Future Step):** Once approved, the buyer will be instructed to make payment and submit proof (this step requires further implementation).
+7.  **Admin Verification (Future Step):** An admin will verify the payment proof.
+8.  **Asset Release (Future Step):** Upon payment verification, the seller will be prompted to release the asset.
+9.  **Dispute/Refund (if applicable):** If issues arise, a dispute can be raised, or a manual refund process initiated by the user (requiring admin approval).
 
 ## Deployment
 
@@ -72,3 +88,14 @@ The core logic of the trade flow is managed by a state machine, ensuring robust 
 ## Contributing
 
 Contributions are welcome! Please feel free to fork the repository, make your changes, and submit a pull request.
+
+
+## Development Roadmap (Completed/In Progress)
+
+- [x] Complete the MongoDB integration (schemas for Users, Trades, Payments implemented).
+- [x] Implement the full trade flow (conversation handlers, state transitions, basic fee calculation, buyer approval).
+- [x] Develop admin features (dashboard, trade history, payment verification, force release, dispute resolution).
+- [x] Implement the refund process (user initiation, admin verification).
+- [x] Add comprehensive error handling.
+- [ ] Deployment to Koyeb for testing (Configuration details provided in `koyeb_deployment_guide.md`).
+
