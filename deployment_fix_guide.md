@@ -7,7 +7,7 @@
 3. Set the following configuration:
    - Runtime: Python 3.10
    - Build Command: `pip install -r requirements.txt`
-   - Run Command: `python3 main.py`
+   - Run Command: `python3 main.py` (This command starts both the Telegram bot and a Flask web server for Koyeb health checks.)
 4. Set all required environment variables:
    - TELEGRAM_BOT_TOKEN
    - MONGODB_URI

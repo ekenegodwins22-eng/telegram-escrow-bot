@@ -9,55 +9,62 @@ Before you begin, ensure you have the following:
 *   A GitHub account with the bot's repository (`telegram-escrow-bot`).
 *   A Koyeb account (sign up at [koyeb.com](https://www.koyeb.com/)).
 *   Your Telegram Bot Token obtained from BotFather.
-*   A MongoDB Atlas account (sign up at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)).
+*   A MongoDB Atlas account and connection string (`MONGODB_URI`).
 
 ## Deployment Steps
 
-Follow these steps to deploy your Universal Telegram Escrow Bot on Koyeb:
+Follow these steps to deploy your Telegram Escrow Bot on Koyeb:
 
-### 1. Set up MongoDB Atlas
+### 1. Create a New Koyeb Service
 
-1.  **Create a MongoDB Atlas Account**: If you don't have one, sign up for a free account on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2.  **Create a New Cluster**: Follow the on-screen instructions to create a new free-tier (M0) cluster. Choose a cloud provider and region that offers low latency to your target user base (e.g., a region close to Nigeria for WAT timezone operations).
-3.  **Configure Network Access**: In your Atlas project, navigate to **Network Access** and add your application's IP addresses (or temporarily allow access from anywhere for initial testing, then restrict later) to the IP Access List. This allows your Koyeb application to connect to the database.
-4.  **Create a Database User**: In your Atlas project, navigate to **Database Access** and create a new database user with a strong password. This user will be used by the bot to connect to the database.
-5.  **Retrieve Connection String**: Go to **Databases** -> **Connect** for your cluster. Choose **Connect your application** and copy the connection string. It will look something like `mongodb+srv://<username>:<password>@<cluster-name>.mongodb.net/<database-name>?retryWrites=true&w=majority`.
+1.  Log in to your Koyeb account.
+2.  Navigate to the **Services** page and click **Create Service**.
+3.  Select **GitHub** as the deployment method.
 
-### 2. Deploy to Koyeb
+### 2. Connect to GitHub
 
-1.  **Log in to Koyeb**: Go to [koyeb.com](https://www.koyeb.com/) and log in to your account.
-2.  **Create a New Service**: Navigate to the **Services** page and click **Create Service**.
-3.  **Connect to GitHub**: Select **GitHub** as the deployment method. If you haven't already, connect your GitHub account and authorize Koyeb to access your `telegram-escrow-bot` repository.
-4.  **Configure Deployment Settings**:
-    *   **Repository**: Select `ekenegodwins22-eng/telegram-escrow-bot`.
-    *   **Branch**: Choose the branch you want to deploy (e.g., `main`).
-    *   **Build Command**: Koyeb typically handles Python dependencies automatically by installing `requirements.txt`. For this project, the default should work.
-    *   **Run Command**: Specify the command to start your bot:
-        ```bash
-     python3 main.py
-        ```
-5.  **Set Environment Variables**:
-    In the Koyeb service configuration, navigate to the **Environment Variables** section and add the following:
+1.  If you haven't already, connect your GitHub account to Koyeb. You might need to authorize Koyeb to access your repositories.
+2.  Select the `telegram-escrow-bot` repository from your list of repositories.
+
+### 3. Configure Deployment
+
+Koyeb will automatically detect that it's a Python application. You may need to adjust some settings:
+
+*   **Branch:** Choose the branch you want to deploy (e.g., `master` or `main`).
+*   **Runtime:** Select **Python 3.10**.
+*   **Build Command:** `pip install -r requirements.txt`
+*   **Run Command:** `python3 main.py`
+
+### 4. Set Environment Variables
+
+This is a crucial step. Your bot requires the following environment variables to function:
+
+1.  In the Koyeb service configuration, navigate to the **Environment Variables** section.
+2.  Add the following environment variables:
     *   **Key:** `TELEGRAM_BOT_TOKEN`
-    *   **Value:** Your actual Telegram Bot Token obtained from BotFather.
+    *   **Value:** Your actual Telegram Bot Token (e.g., `123456:ABC-DEF1234ghIkl-789_jklmnoPQRSTUV`)
     *   **Key:** `MONGODB_URI`
-    *   **Value:** The connection string you retrieved from MongoDB Atlas.
+    *   **Value:** Your MongoDB Atlas connection string.
     *   **Key:** `ADMIN_IDS`
-    *   **Value:** A comma-separated list of Telegram user IDs for your bot administrators (e.g., `123456789,987654321`).
-    *   **Key:** `TZ`
-    *   **Value:** `Africa/Lagos` (This ensures all time-related operations adhere to the Nigeria Time Zone (WAT)).
+    *   **Value:** A comma-separated list of Telegram user IDs for your bot administrators (e.g., `123456789,987654321`)
 
-    **Important:** Always use environment variables for sensitive information and configuration. Never hardcode these values directly into your code.
+    **Important:** Never hardcode your bot token, MongoDB URI, or admin IDs directly into your code. Always use environment variables for sensitive information.
 
-6.  **Deploy the Service**: Review all your settings and click **Deploy** to initiate the deployment process. Monitor the build and deployment logs in the Koyeb dashboard for any issues.
+### 5. Deploy the Service
+
+1.  Review all your settings.
+2.  Click **Deploy** to start the deployment process.
+
+Koyeb will now fetch your code from GitHub, install dependencies, and run your bot. The integrated Flask web server will keep the application alive and respond to Koyeb's health checks.
 
 ## Post-Deployment
 
-Once your bot is deployed and running, it will be accessible via Telegram. Ensure your bot is set up to receive updates (webhook or long polling). The provided `main.py` uses long polling, which should work out-of-the-box with Koyeb.
+Once your bot is deployed and running, it will be accessible via Telegram. The bot uses long polling, which will run in a separate thread, while the Flask web server handles health checks.
 
 ## Troubleshooting
 
-*   **Bot not responding:** Check the Koyeb deployment logs for any errors during startup or runtime. Ensure `TELEGRAM_BOT_TOKEN` is correctly set.
+*   **Bot not responding:** Check the Koyeb deployment logs for any errors during startup or runtime. Ensure all environment variables are correctly set.
 *   **Dependencies not installed:** Verify that `requirements.txt` is correctly formatted and contains all necessary packages.
+*   **MongoDB Connection Issues:** Ensure your MongoDB Atlas cluster is accessible and the `MONGODB_URI` is correct.
 
 For further assistance, refer to the [Koyeb Documentation](https://www.koyeb.com/docs).
