@@ -181,7 +181,7 @@ async def payment_method(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["payment_method"] = query.data.split("_")[1]
-    await query.edit_message_text(f"Selected payment method: {context.user_data["payment_method"]}.\n\nPlease provide the trade deadline (e.g., YYYY-MM-DD HH:MM). All times are in WAT.")
+    await query.edit_message_text(f"Selected payment method: {context.user_data['payment_method']}.\n\nPlease provide the trade deadline (e.g., YYYY-MM-DD HH:MM). All times are in WAT.")
     return DEADLINE
 
 async def deadline_input(update: Update, context: CallbackContext) -> int:
