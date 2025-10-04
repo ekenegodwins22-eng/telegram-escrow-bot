@@ -141,7 +141,7 @@ async def item_category(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["item_category"] = query.data.split("_")[1]
-    await query.edit_message_text(f"Selected category: {context.user_data["item_category"]}.\n\nPlease provide a detailed description of the item you are trading.")
+    await query.edit_message_text(f"Selected category: {context.user_data['item_category']}.\n\nPlease provide a detailed description of the item you are trading.")
     return ITEM_DESCRIPTION
 
 async def item_description(update: Update, context: CallbackContext) -> int:
