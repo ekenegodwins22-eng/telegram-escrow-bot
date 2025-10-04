@@ -1,13 +1,31 @@
 stateDiagram-v2
-    [*] --> AWAITING_PAYMENT
-    AWAITING_PAYMENT --> AWAITING_DELIVERY : Buyer Pays
-    AWAITING_PAYMENT --> CANCELED : Cancel Trade
-    AWAITING_DELIVERY --> DELIVERED : Seller Delivers
-    AWAITING_DELIVERY --> DISPUTED : Raise Dispute
-    DELIVERED --> COMPLETED : Buyer Confirms
-    DELIVERED --> DISPUTED : Raise Dispute
-    DISPUTED --> RESOLVED : Admin Resolves
-    COMPLETED --> [*]
-    CANCELED --> [*]
-    RESOLVED --> [*]
+    [*] --> TradeInitiated
+
+    TradeInitiated --> PendingBuyerApproval : /trade command, details provided
+    PendingBuyerApproval --> Approved : Buyer approves
+    PendingBuyerApproval --> Rejected : Buyer rejects
+
+    Approved --> PaymentPending : Buyer instructed to pay
+    PaymentPending --> PaymentVerified : Admin verifies payment
+    PaymentPending --> PaymentFailed : Payment not received/verified
+
+    PaymentVerified --> AssetReleasePending : Seller notified to release asset
+    AssetReleasePending --> AssetReleased : Seller confirms release
+    AssetReleasePending --> DisputeRaised : Buyer/Seller raises dispute
+
+    AssetReleased --> Completed : Buyer confirms receipt
+    AssetReleased --> DisputeRaised : Buyer raises dispute
+
+    DisputeRaised --> DisputeResolved : Admin resolves dispute
+    DisputeRaised --> RefundInitiated : Admin initiates refund
+
+    RefundInitiated --> RefundProcessed : Admin processes refund
+
+    Rejected --> Canceled : Trade rejected
+    PaymentFailed --> Canceled : Payment failed
+    DisputeResolved --> Completed : Dispute resolved, trade completed
+    RefundProcessed --> Canceled : Refund completed
+
+    Canceled --> [*]
+    Completed --> [*]
 
